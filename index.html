@@ -41,9 +41,9 @@
             faceapi.matchDimensions(canvas, img)
 
             faceDescriptions = faceapi.resizeResults(faceDescriptions, img)
-            faceapi.draw.drawDetections(canvas, faceDescriptions)
-            faceapi.draw.drawFaceLandmarks(canvas, faceDescriptions)
-            faceapi.draw.drawFaceExpressions(canvas, faceDescriptions)
+            // faceapi.draw.drawDetections(canvas, faceDescriptions)
+            // faceapi.draw.drawFaceLandmarks(canvas, faceDescriptions)
+            // faceapi.draw.drawFaceExpressions(canvas, faceDescriptions)
 
             faceDescriptions.forEach((faceDescription, i) => {
                 const box = faceDescription.detection.box; // 감지된 얼굴의 bounding box 정보를 가져옵니다.
