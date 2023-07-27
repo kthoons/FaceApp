@@ -45,6 +45,14 @@
             faceapi.draw.drawFaceLandmarks(canvas, faceDescriptions)
             faceapi.draw.drawFaceExpressions(canvas, faceDescriptions)
 
+            faceDescriptions.forEach((faceDescription, i) => {
+                const box = faceDescription.detection.box; // 감지된 얼굴의 bounding box 정보를 가져옵니다.
+                const x = box.x; // 얼굴의 x 좌표
+                const y = box.y; // 얼굴의 y 좌표
+                const width = box.width; // 얼굴의 너비
+                const height = box.height; // 얼굴의 높이
+                console.log(`Face ${i + 1}: x=${x}, y=${y}, width=${width}, height=${height}`);
+            })
 
             const labels = ['angry', 'disgusted', 'fearful', 'happy', 'neutral', 'sad']
 
