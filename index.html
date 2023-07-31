@@ -4,91 +4,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Face App</title>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    
     <style>
-        #overlay,
-        .overlay {
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
             position: absolute;
-            top: 0;
-            left: 0;
         }
     </style>
-
 </head>
 
 <body>
-    <img src="images/friendsreunion.jpg" id="originalImg" />
-    <canvas id="reflay" class="overlay"></canvas>
+    <video id="video" width="720" height="560" autoplay muted></video>
 </body>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js">//JQuery 라이브러리 로드</script>
-<script src="js/face-api.js"></script>
-<!-- <script src="js/faceSystem.js"></script> -->
+<script src="js/face-api.min.js" defer></script>
 <script>
-    $(document).ready(function () {
+    const video = document.getElementById('video');
+    console.log(faceapi);
+    // 모델 로드를 끝 마치면 startVideo 함수 실행 
+    Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+        faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+        faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
+        faceapi.nets.faceExpressionNet.loadFromUri('/models'),
+        faceapi.nets.ssdMobilenetv1.loadFromUri('./models')
+    ]).then(startVideo);
 
-        async function face() {
-
-            const MODEL_URL = '/models'
-
-            await faceapi.loadSsdMobilenetv1Model(MODEL_URL)
-            await faceapi.loadFaceLandmarkModel(MODEL_URL)
-            await faceapi.loadFaceRecognitionModel(MODEL_URL)
-            await faceapi.loadFaceExpressionModel(MODEL_URL)
-
-            const img = document.getElementById('originalImg')
-            let faceDescriptions = await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors().withFaceExpressions()
-            const canvas = $('#reflay').get(0)
-            faceapi.matchDimensions(canvas, img)
-
-            faceDescriptions = faceapi.resizeResults(faceDescriptions, img)
-            // faceapi.draw.drawDetections(canvas, faceDescriptions)
-            // faceapi.draw.drawFaceLandmarks(canvas, faceDescriptions)
-            // faceapi.draw.drawFaceExpressions(canvas, faceDescriptions)
-
-            faceDescriptions.forEach((faceDescription, i) => {
-                const box = faceDescription.detection.box; // 감지된 얼굴의 bounding box 정보를 가져옵니다.
-                const x = box.x; // 얼굴의 x 좌표
-                const y = box.y; // 얼굴의 y 좌표
-                const width = box.width; // 얼굴의 너비
-                const height = box.height; // 얼굴의 높이
-                console.log(`Face ${i + 1}: x=${x}, y=${y}, width=${width}, height=${height}`);
+    
+    // 유저의 카메라 권한을 얻기 위한 코드
+    function startVideo() {
+        navigator.mediaDevices
+            .getUserMedia({ video: true })
+            .then(function (stream) {
+                video.srcObject = stream;
             })
+            .catch(function (err) {
+                console.log(err);
+            });
+    }
 
-            // const labels = ['angry', 'disgusted', 'fearful', 'happy', 'neutral', 'sad']
 
-            // const labeledFaceDescriptors = await Promise.all(
-            //     labels.map(async label => {
-
-            //         const imgUrl = `images/${label}.jpg`
-            //         const img = await faceapi.fetchImage(imgUrl)
-
-            //         const faceDescription = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor()
-
-            //         if (!faceDescription) {
-            //             throw new Error(`no faces detected for ${label}`)
-            //         }
-
-            //         const faceDescriptors = [faceDescription.descriptor]
-            //         return new faceapi.LabeledFaceDescriptors(label, faceDescriptors)
-            //     })
-            // );
-
-            // const threshold = 0.6
-            // const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, threshold)
-
-            // const results = faceDescriptions.map(fd => faceMatcher.findBestMatch(fd.descriptor))
-
-            // results.forEach((bestMatch, i) => {
-            //     const box = faceDescriptions[i].detection.box
-            //     const text = bestMatch.toString()
-            //     const drawBox = new faceapi.draw.DrawBox(box, { label: text })
-            //     drawBox.draw(canvas)
-            // })
-
-        }
-        
-
-        face()
+    video.addEventListener('play', () => {
+        // canvas를 초기화 함
+        const canvas = faceapi.createCanvasFromMedia(video);
+        document.body.append(canvas);
+        const displaySize = { width: video.width, height: video.height };
+        faceapi.matchDimensions(canvas, displaySize);
+        // 100ms 마다 화면에 video frame이 표시 됨
+        setInterval(async () => {
+            // video에서 얼굴을 식별
+            const detections = await faceapi.detectAllFaces(video).withFaceLandmarks().withFaceDescriptors();
+            const resizedDetections = faceapi.resizeResults(detections, displaySize);
+            canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+            // video에서 얼굴 좌표에 box를 그림
+            resizedDetections.forEach(detection => {
+                const box = detection.detection.box;
+                const drawBox = new faceapi.draw.DrawBox(box, { label: 'Face' });
+                drawBox.draw(canvas);
+                // box의 좌표 값과 너비, 길이를 콘솔창에 출력
+                console.log(box.x, box.y, box.width, box.height);
+            })
+        }, 100)
     })
 </script>
 
